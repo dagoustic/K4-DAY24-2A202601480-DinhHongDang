@@ -101,6 +101,30 @@ def run_query(q: str, search, reranker, top_k: int) -> tuple[str, list[str]]:
     return (contexts[0] if contexts else "Không tìm thấy thông tin."), contexts
 
 
+def generate_local_answers(test_set: list[dict]) -> list[dict]:
+    """Offline fallback when dense retrieval/Qdrant/LLM is unavailable."""
+    from src.m1_chunking import load_documents, chunk_basic
+    import re
+
+    chunks = []
+    for doc in load_documents():
+        chunks.extend(chunk_basic(doc["text"], chunk_size=900, metadata=doc["metadata"]))
+
+    def terms(value):
+        return {t.casefold() for t in re.findall(r"[\wÀ-ỹ]+", value) if len(t) > 2}
+
+    output = []
+    for item in test_set:
+        query_terms = terms(item["question"])
+        ranked = sorted(chunks, key=lambda c: len(query_terms & terms(c.text)), reverse=True)
+        contexts = [c.text for c in ranked[:3] if query_terms & terms(c.text)]
+        output.append({"id": item["id"], "distribution": item["distribution"],
+                       "question": item["question"],
+                       "answer": contexts[0] if contexts else "Không tìm thấy thông tin trong tài liệu.",
+                       "contexts": contexts, "ground_truth": item["ground_truth"]})
+    return output
+
+
 def main():
     print("=" * 60)
     print("LAB 24 SETUP — Generating answers for 50 questions")
@@ -112,6 +136,15 @@ def main():
     with open("test_set_50q.json", encoding="utf-8") as f:
         test_set = json.load(f)
     print(f"✓ Loaded {len(test_set)} questions (factual/multi_hop/adversarial)")
+
+    from config import OPENAI_API_KEY
+    if not OPENAI_API_KEY or os.getenv("LAB24_OFFLINE") == "1":
+        print("\n⚠️  Dùng offline lexical baseline (LAB24_OFFLINE=1 hoặc chưa có API key).")
+        answers = generate_local_answers(test_set)
+        with open("answers_50q.json", "w", encoding="utf-8") as f:
+            json.dump(answers, f, ensure_ascii=False, indent=2)
+        print(f"✓ Saved {len(answers)} offline answers → answers_50q.json")
+        return
 
     try:
         search, reranker, top_k = build_pipeline()

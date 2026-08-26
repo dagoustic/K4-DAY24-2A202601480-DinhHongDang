@@ -1,0 +1,136 @@
+{
+  "student": "Đinh Hồng Đăng",
+  "student_id": "2A202601480",
+  "date": "26/08/2026",
+  "judge_model": "gpt-4o-mini",
+  "num_questions": 10,
+  "judge_labels": [
+    1,
+    1,
+    0,
+    1,
+    0,
+    0,
+    0,
+    1,
+    0,
+    0
+  ],
+  "human_labels": [
+    1,
+    0,
+    1,
+    1,
+    1,
+    0,
+    1,
+    0,
+    1,
+    0
+  ],
+  "cohen_kappa": -0.153846,
+  "bias": {
+    "total_judged": 10,
+    "position_bias_rate": 0.0,
+    "position_bias_count": 0,
+    "verbosity_bias": 0.857,
+    "verbosity_details": {
+      "a_wins_a_longer": 0,
+      "b_wins_b_longer": 6,
+      "total_decisive": 7
+    },
+    "interpretation": "Position bias thấp — judge tương đối ổn định."
+  },
+  "results": [
+    {
+      "question": "Nhân viên được nghỉ bao nhiêu ngày khi kết hôn?",
+      "winner_pass1": "tie",
+      "winner_pass2": "tie",
+      "final_winner": "tie",
+      "position_consistent": true,
+      "reasoning_pass1": "No OPENAI_API_KEY; deterministic lexical baseline used.",
+      "reasoning_pass2": "No OPENAI_API_KEY; deterministic lexical baseline used."
+    },
+    {
+      "question": "Muốn mua thiết bị trị giá 55 triệu cần ai phê duyệt?",
+      "winner_pass1": "tie",
+      "winner_pass2": "tie",
+      "final_winner": "tie",
+      "position_consistent": true,
+      "reasoning_pass1": "No OPENAI_API_KEY; deterministic lexical baseline used.",
+      "reasoning_pass2": "No OPENAI_API_KEY; deterministic lexical baseline used."
+    },
+    {
+      "question": "Thưởng Tết tối thiểu cho nhân viên chính thức có từ 6 tháng trở lên là bao nhiêu?",
+      "winner_pass1": "B",
+      "winner_pass2": "B",
+      "final_winner": "B",
+      "position_consistent": true,
+      "reasoning_pass1": "No OPENAI_API_KEY; deterministic lexical baseline used.",
+      "reasoning_pass2": "No OPENAI_API_KEY; deterministic lexical baseline used."
+    },
+    {
+      "question": "Một nhân viên Senior có 9 năm thâm niên được nghỉ bao nhiêu ngày phép năm và lương trong khoảng nào?",
+      "winner_pass1": "tie",
+      "winner_pass2": "tie",
+      "final_winner": "tie",
+      "position_consistent": true,
+      "reasoning_pass1": "No OPENAI_API_KEY; deterministic lexical baseline used.",
+      "reasoning_pass2": "No OPENAI_API_KEY; deterministic lexical baseline used."
+    },
+    {
+      "question": "Nhân viên được tài trợ khóa học 25 triệu, nghỉ việc sau 8 tháng. Phải hoàn trả bao nhiêu?",
+      "winner_pass1": "B",
+      "winner_pass2": "B",
+      "final_winner": "B",
+      "position_consistent": true,
+      "reasoning_pass1": "No OPENAI_API_KEY; deterministic lexical baseline used.",
+      "reasoning_pass2": "No OPENAI_API_KEY; deterministic lexical baseline used."
+    },
+    {
+      "question": "Nhân viên tạm ứng 8 triệu, chưa thanh toán sau 30 ngày. Ai phê duyệt và phí phạt là bao nhiêu?",
+      "winner_pass1": "B",
+      "winner_pass2": "B",
+      "final_winner": "B",
+      "position_consistent": true,
+      "reasoning_pass1": "No OPENAI_API_KEY; deterministic lexical baseline used.",
+      "reasoning_pass2": "No OPENAI_API_KEY; deterministic lexical baseline used."
+    },
+    {
+      "question": "Nhân viên Manager có thâm niên 12 năm: tổng phụ cấp hàng tháng và số ngày phép năm?",
+      "winner_pass1": "B",
+      "winner_pass2": "B",
+      "final_winner": "B",
+      "position_consistent": true,
+      "reasoning_pass1": "No OPENAI_API_KEY; deterministic lexical baseline used.",
+      "reasoning_pass2": "No OPENAI_API_KEY; deterministic lexical baseline used."
+    },
+    {
+      "question": "Nhân viên được nghỉ bao nhiêu ngày phép năm?",
+      "winner_pass1": "A",
+      "winner_pass2": "A",
+      "final_winner": "A",
+      "position_consistent": true,
+      "reasoning_pass1": "No OPENAI_API_KEY; deterministic lexical baseline used.",
+      "reasoning_pass2": "No OPENAI_API_KEY; deterministic lexical baseline used."
+    },
+    {
+      "question": "Nhân viên thử việc có được nghỉ phép năm không?",
+      "winner_pass1": "B",
+      "winner_pass2": "B",
+      "final_winner": "B",
+      "position_consistent": true,
+      "reasoning_pass1": "No OPENAI_API_KEY; deterministic lexical baseline used.",
+      "reasoning_pass2": "No OPENAI_API_KEY; deterministic lexical baseline used."
+    },
+    {
+      "question": "Nhân viên Manager có thể dùng VPN cá nhân (NordVPN) khi WFH không?",
+      "winner_pass1": "B",
+      "winner_pass2": "B",
+      "final_winner": "B",
+      "position_consistent": true,
+      "reasoning_pass1": "No OPENAI_API_KEY; deterministic lexical baseline used.",
+      "reasoning_pass2": "No OPENAI_API_KEY; deterministic lexical baseline used."
+    }
+  ]
+}

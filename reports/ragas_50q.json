@@ -1,0 +1,141 @@
+{
+  "student": "Đinh Hồng Đăng",
+  "student_id": "2A202601480",
+  "date": "26/08/2026",
+  "total_questions": 50,
+  "per_distribution": {
+    "factual": {
+      "count": 20,
+      "faithfulness": 0.860415,
+      "answer_relevancy": 0.7690750000000001,
+      "context_precision": 0.4779950000000001,
+      "context_recall": 0.850845,
+      "avg_score": 0.7395824999999999
+    },
+    "multi_hop": {
+      "count": 20,
+      "faithfulness": 0.67347,
+      "answer_relevancy": 0.6772000000000001,
+      "context_precision": 0.6759550000000001,
+      "context_recall": 0.8114399999999999,
+      "avg_score": 0.70951625
+    },
+    "adversarial": {
+      "count": 10,
+      "faithfulness": 0.56507,
+      "answer_relevancy": 0.8043800000000001,
+      "context_precision": 0.47017999999999993,
+      "context_recall": 0.84799,
+      "avg_score": 0.671905
+    }
+  },
+  "failure_clusters": {
+    "matrix": {
+      "faithfulness": {
+        "factual": 1,
+        "multi_hop": 8,
+        "adversarial": 5
+      },
+      "context_recall": {
+        "factual": 0,
+        "multi_hop": 0,
+        "adversarial": 0
+      },
+      "context_precision": {
+        "factual": 19,
+        "multi_hop": 8,
+        "adversarial": 5
+      },
+      "answer_relevancy": {
+        "factual": 0,
+        "multi_hop": 4,
+        "adversarial": 0
+      }
+    },
+    "dominant_failure_distribution": "factual",
+    "dominant_failure_metric": "context_precision",
+    "insight": "Distribution 'factual' has the most failures; metric 'context_precision' is the dominant weakness. Suggested fix: Add reranking or metadata filter."
+  },
+  "bottom_10": [
+    {
+      "rank": 1,
+      "question_id": 50,
+      "distribution": "adversarial",
+      "question": "Nhân viên Manager có thể dùng VPN cá nhân (như NordVPN) khi WFH để tăng bảo mật thêm không?",
+      "avg_score": 0.5055,
+      "worst_metric": "faithfulness"
+    },
+    {
+      "rank": 2,
+      "question_id": 34,
+      "distribution": "multi_hop",
+      "question": "Nhân viên tạm ứng 4 triệu và một nhân viên khác tạm ứng 7 triệu: quy trình phê duyệt khác nhau thế nào?",
+      "avg_score": 0.5153,
+      "worst_metric": "context_precision"
+    },
+    {
+      "rank": 3,
+      "question_id": 22,
+      "distribution": "multi_hop",
+      "question": "Nếu cần mua một chiếc laptop 30 triệu cho nhân viên mới, ai phê duyệt và cần gì từ phòng CNTT?",
+      "avg_score": 0.53,
+      "worst_metric": "faithfulness"
+    },
+    {
+      "rank": 4,
+      "question_id": 20,
+      "distribution": "factual",
+      "question": "Phụ cấp đi lại tối đa mỗi tháng là bao nhiêu và điều kiện để được hưởng là gì?",
+      "avg_score": 0.5576,
+      "worst_metric": "faithfulness"
+    },
+    {
+      "rank": 5,
+      "question_id": 3,
+      "distribution": "factual",
+      "question": "Phụ cấp ăn trưa hàng tháng là bao nhiêu?",
+      "avg_score": 0.5765,
+      "worst_metric": "context_precision"
+    },
+    {
+      "rank": 6,
+      "question_id": 40,
+      "distribution": "multi_hop",
+      "question": "Nhân viên thử việc tháng thứ 3 phát hiện vi phạm bảo mật. Họ nên và không nên làm gì theo chính sách?",
+      "avg_score": 0.5807,
+      "worst_metric": "faithfulness"
+    },
+    {
+      "rank": 7,
+      "question_id": 33,
+      "distribution": "multi_hop",
+      "question": "Nhân viên Manager có thâm niên 12 năm: tổng phụ cấp hàng tháng và số ngày phép năm theo v2024 là bao nhiêu?",
+      "avg_score": 0.5938,
+      "worst_metric": "faithfulness"
+    },
+    {
+      "rank": 8,
+      "question_id": 41,
+      "distribution": "adversarial",
+      "question": "Nhân viên được nghỉ bao nhiêu ngày phép năm?",
+      "avg_score": 0.6056,
+      "worst_metric": "faithfulness"
+    },
+    {
+      "rank": 9,
+      "question_id": 18,
+      "distribution": "factual",
+      "question": "Cơ cấu điểm đánh giá hiệu suất gồm những thành phần nào và tỷ lệ ra sao?",
+      "avg_score": 0.6111,
+      "worst_metric": "context_precision"
+    },
+    {
+      "rank": 10,
+      "question_id": 13,
+      "distribution": "factual",
+      "question": "Đánh giá hiệu suất diễn ra mấy lần một năm và vào tháng nào?",
+      "avg_score": 0.6143,
+      "worst_metric": "context_precision"
+    }
+  ]
+}

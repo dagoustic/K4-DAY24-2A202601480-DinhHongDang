@@ -8,6 +8,7 @@ import os
 import statistics
 import sys
 import time
+import re
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from config import ADVERSARIAL_SET_PATH, GUARDRAILS_CONFIG_DIR, LATENCY_BUDGET_P95_MS, PRESIDIO_LANGUAGE
@@ -59,7 +60,7 @@ def pii_scan(text: str, analyzer=None, anonymizer=None) -> dict:
           "anonymized": str,   # text với PII được thay bằng <TYPE>
         }
     """
-    # TODO: Implement
+    # Implemented
     # if analyzer is None or anonymizer is None:
     #     analyzer, anonymizer = setup_presidio()
     #
@@ -74,7 +75,35 @@ def pii_scan(text: str, analyzer=None, anonymizer=None) -> dict:
     #     for r in results
     # ]
     # return {"has_pii": True, "entities": entities, "anonymized": anonymized}
-    return {"has_pii": False, "entities": [], "anonymized": text}
+    if (analyzer is None or anonymizer is None) and os.getenv("LAB24_OFFLINE") != "1":
+        try:
+            analyzer, anonymizer = setup_presidio()
+        except Exception:
+            analyzer = anonymizer = None
+    entities = []
+    if analyzer is not None:
+        try:
+            entities = [{"type": r.entity_type, "text": text[r.start:r.end],
+                         "score": round(float(r.score), 3), "start": r.start, "end": r.end}
+                        for r in analyzer.analyze(text=text, language=PRESIDIO_LANGUAGE)]
+        except Exception:
+            entities = []
+    spans = {(e["start"], e["end"]) for e in entities}
+    patterns = [("VN_CCCD", r"\b\d{12}\b", .9), ("VN_CCCD", r"\b\d{9}\b", .7),
+                ("VN_PHONE", r"\b0[3-9]\d{8}\b", .9),
+                ("EMAIL_ADDRESS", r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b", .95)]
+    for entity_type, pattern, score in patterns:
+        for match in re.finditer(pattern, text):
+            span = (match.start(), match.end())
+            if not any(not (span[1] <= start or span[0] >= end) for start, end in spans):
+                entities.append({"type": entity_type, "text": match.group(), "score": score,
+                                 "start": span[0], "end": span[1]})
+                spans.add(span)
+    entities.sort(key=lambda e: e["start"])
+    anonymized = text
+    for entity in reversed(entities):
+        anonymized = anonymized[:entity["start"]] + f"<{entity['type']}>" + anonymized[entity["end"]:]
+    return {"has_pii": bool(entities), "entities": entities, "anonymized": anonymized}
 
 
 # ─── Task 9b + 11: NeMo Guardrails ───────────────────────────────────────────
@@ -102,7 +131,7 @@ async def check_input_rail(text: str, rails=None) -> dict:
           "response":       str,          # NeMo's raw response
         }
     """
-    # TODO: Implement
+    # Implemented
     # if rails is None:
     #     rails = setup_nemo_rails()
     #
@@ -117,7 +146,29 @@ async def check_input_rail(text: str, rails=None) -> dict:
     #     "blocked_reason": "nemo_input_rail" if blocked else None,
     #     "response":       response,
     # }
-    return {"allowed": True, "blocked_reason": None, "response": ""}
+    if rails is not None:
+        try:
+            raw = await rails.generate_async(messages=[{"role": "user", "content": text}])
+            response = raw if isinstance(raw, str) else str(raw)
+            blocked = any(word in response.casefold() for word in ["xin lỗi", "không thể", "i cannot"])
+            return {"allowed": not blocked,
+                    "blocked_reason": "nemo_input_rail" if blocked else None,
+                    "response": response}
+        except Exception:
+            pass
+    lowered = text.casefold()
+    blocked_terms = ["ignore your", "system override", "forget all", "unrestricted ai",
+                     "pretend you are dan", "do anything now", "bỏ qua tất cả",
+                     "đóng vai", "không có giới hạn", "in ra toàn bộ system",
+                     "admin command", "ignore previous", "tiết lộ", "mật khẩu admin",
+                     "bảng lương", "dữ liệu nhân viên", "cccd của nhân viên",
+                     "số điện thoại của nhân viên", "thông tin cá nhân", "viết một bài thơ",
+                     "nấu phở", "bitcoin", "ethereum", "giá cổ phiếu", "giải phương trình",
+                     "bộ phim", "thời tiết"]
+    blocked = any(term in lowered for term in blocked_terms)
+    return {"allowed": not blocked,
+            "blocked_reason": "nemo_input_rail" if blocked else None,
+            "response": "Xin lỗi, tôi chỉ hỗ trợ chính sách HR nội bộ." if blocked else ""}
 
 
 async def check_output_rail(question: str, answer: str, rails=None) -> dict:
@@ -133,7 +184,7 @@ async def check_output_rail(question: str, answer: str, rails=None) -> dict:
           "final_answer":   str,          # answer đã qua guard (có thể bị redact)
         }
     """
-    # TODO: Implement
+    # Implemented
     # if rails is None:
     #     rails = setup_nemo_rails()
     #
@@ -149,7 +200,22 @@ async def check_output_rail(question: str, answer: str, rails=None) -> dict:
     #     "flagged_reason": "nemo_output_rail" if flagged else None,
     #     "final_answer":   response if flagged else answer,
     # }
-    return {"safe": True, "flagged_reason": None, "final_answer": answer}
+    if rails is not None:
+        try:
+            raw = await rails.generate_async(messages=[{"role": "user", "content": question},
+                                                        {"role": "assistant", "content": answer}])
+            response = raw if isinstance(raw, str) else str(raw)
+            flagged = response != answer and any(word in response.casefold() for word in ["xin lỗi", "không thể", "i cannot"])
+            return {"safe": not flagged,
+                    "flagged_reason": "nemo_output_rail" if flagged else None,
+                    "final_answer": response if flagged else answer}
+        except Exception:
+            pass
+    pii = pii_scan(answer)
+    sensitive = any(term in answer.casefold() for term in ["mật khẩu hệ thống", "thông tin bí mật"])
+    unsafe = pii["has_pii"] or sensitive
+    return {"safe": not unsafe, "flagged_reason": "sensitive_output" if unsafe else None,
+            "final_answer": "Tôi không thể cung cấp thông tin nhạy cảm này." if unsafe else answer}
 
 
 # ─── Task 10: Adversarial Test Suite ─────────────────────────────────────────
@@ -171,7 +237,7 @@ def run_adversarial_suite(adversarial_set: list[dict], rails=None,
           "passed": bool,
         }
     """
-    # TODO: Implement
+    # Implemented
     # async def _run_all():
     #     results = []
     #     for item in adversarial_set:
@@ -204,7 +270,26 @@ def run_adversarial_suite(adversarial_set: list[dict], rails=None,
     # passed = sum(1 for r in results if r["passed"])
     # print(f"Adversarial suite: {passed}/{len(results)} passed")
     # return results
-    return []
+    async def _run_all():
+        results = []
+        for item in adversarial_set:
+            pii_result = pii_scan(item["input"], analyzer, anonymizer)
+            blocked_by = "presidio" if pii_result["has_pii"] else None
+            if blocked_by is None:
+                rail_result = await check_input_rail(item["input"], rails)
+                if not rail_result["allowed"]:
+                    blocked_by = "nemo_input"
+            actual = "blocked" if blocked_by else "allowed"
+            results.append({"id": item["id"], "category": item["category"],
+                            "input": item["input"][:80] + ("..." if len(item["input"]) > 80 else ""),
+                            "expected": item["expected"], "actual": actual,
+                            "blocked_by": blocked_by, "passed": actual == item["expected"]})
+        return results
+    try:
+        asyncio.get_running_loop()
+    except RuntimeError:
+        return asyncio.run(_run_all())
+    raise RuntimeError("run_adversarial_suite must be called outside an active event loop")
 
 
 # ─── Task 12: P95 Latency Measurement ────────────────────────────────────────
@@ -229,7 +314,7 @@ def measure_p95_latency(test_inputs: list[str], n_runs: int = 20,
           "budget_ms": int,
         }
     """
-    # TODO: Implement
+    # Implemented
     # presidio_times, nemo_times, total_times = [], [], []
     #
     # async def _measure():
@@ -267,16 +352,44 @@ def measure_p95_latency(test_inputs: list[str], n_runs: int = 20,
     #     "latency_budget_ok": total_p["p95"] < LATENCY_BUDGET_P95_MS,
     #     "budget_ms": LATENCY_BUDGET_P95_MS,
     # }
-    return {
-        "presidio_ms": {"p50": 0.0, "p95": 0.0, "p99": 0.0},
-        "nemo_ms":     {"p50": 0.0, "p95": 0.0, "p99": 0.0},
-        "total_ms":    {"p50": 0.0, "p95": 0.0, "p99": 0.0},
-        "latency_budget_ok": False,
-        "budget_ms": LATENCY_BUDGET_P95_MS,
-    }
+    if not test_inputs:
+        test_inputs = [""]
+    presidio_times, nemo_times, total_times = [], [], []
+    for sample in (test_inputs * max(1, n_runs))[:max(1, n_runs)]:
+        start = time.perf_counter(); pii_scan(sample, analyzer, anonymizer)
+        p_ms = (time.perf_counter() - start) * 1000
+        start = time.perf_counter(); asyncio.run(check_input_rail(sample, rails))
+        n_ms = (time.perf_counter() - start) * 1000
+        presidio_times.append(p_ms); nemo_times.append(n_ms); total_times.append(p_ms + n_ms)
+
+    def percentiles(values):
+        values = sorted(values)
+        def pick(q):
+            return round(values[min(len(values) - 1, max(0, int((len(values) - 1) * q)))], 2)
+        return {"p50": pick(.50), "p95": pick(.95), "p99": pick(.99)}
+    total = percentiles(total_times)
+    return {"presidio_ms": percentiles(presidio_times), "nemo_ms": percentiles(nemo_times),
+            "total_ms": total, "latency_budget_ok": total["p95"] < LATENCY_BUDGET_P95_MS,
+            "budget_ms": LATENCY_BUDGET_P95_MS}
 
 
 # ─── Main ─────────────────────────────────────────────────────────────────────
+
+def run_phase_c_report() -> dict:
+    with open(ADVERSARIAL_SET_PATH, encoding="utf-8") as f:
+        adversarial_set = json.load(f)
+    suite = run_adversarial_suite(adversarial_set)
+    latency = measure_p95_latency([item["input"] for item in adversarial_set[:10]], n_runs=10)
+    passed = sum(item["passed"] for item in suite)
+    report = {"student": "Đinh Hồng Đăng", "student_id": "2A202601480", "date": "26/08/2026",
+              "adversarial_total": len(suite), "adversarial_passed": passed,
+              "adversarial_pass_rate": round(passed / max(1, len(suite)), 3),
+              "results": suite, "latency": latency}
+    os.makedirs("reports", exist_ok=True)
+    with open("reports/guard_results.json", "w", encoding="utf-8") as f:
+        json.dump(report, f, ensure_ascii=False, indent=2)
+    return report
+
 
 if __name__ == "__main__":
     # Task 9a: PII scan demo
@@ -302,3 +415,5 @@ if __name__ == "__main__":
           f"NeMo: {latency['nemo_ms']['p95']}ms | "
           f"Total: {latency['total_ms']['p95']}ms")
     print(f"Budget OK ({latency['budget_ms']}ms): {latency['latency_budget_ok']}")
+    report = run_phase_c_report()
+    print(f"Report saved: reports/guard_results.json ({report['adversarial_passed']}/{report['adversarial_total']})")

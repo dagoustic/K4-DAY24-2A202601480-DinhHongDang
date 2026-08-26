@@ -1,70 +1,42 @@
 # Failure Cluster Analysis — Phase A
 
-**Sinh viên:** [Họ Tên]  
-**Ngày:** [Ngày làm lab]
+**Sinh viên:** Đinh Hồng Đăng  
+**MSHV:** 2A202601480  
+**Ngày:** 26/08/2026
 
----
-
-## 1. Aggregate RAGAS Scores theo Distribution
+## Aggregate RAGAS Scores
 
 | Metric | factual | multi_hop | adversarial |
-|---|---|---|---|
-| faithfulness | ? | ? | ? |
-| answer_relevancy | ? | ? | ? |
-| context_precision | ? | ? | ? |
-| context_recall | ? | ? | ? |
-| **avg_score** | ? | ? | ? |
+|---|---:|---:|---:|
+| faithfulness | 0.8604 | 0.6735 | 0.5651 |
+| answer_relevancy | 0.7691 | 0.6772 | 0.8044 |
+| context_precision | 0.4780 | 0.6760 | 0.4702 |
+| context_recall | 0.8508 | 0.8114 | 0.8480 |
+| **avg_score** | **0.7396** | **0.7095** | **0.6719** |
 
----
+## Failure Cluster Matrix
 
-## 2. Bottom 10 Questions
+| Worst metric | factual | multi_hop | adversarial | Total |
+|---|---:|---:|---:|---:|
+| faithfulness | 4 | 6 | 4 | 14 |
+| answer_relevancy | 0 | 0 | 0 | 0 |
+| context_precision | 16 | 10 | 6 | 32 |
+| context_recall | 0 | 4 | 0 | 4 |
 
-| Rank | Distribution | Question | avg_score | worst_metric |
-|---|---|---|---|---|
-| 1 | | | | |
-| 2 | | | | |
-| ... | | | | |
+## Dominant Failure Analysis
 
----
+- Dominant distribution: **factual** (20 worst-metric cases).
+- Dominant metric: **context_precision** (32 cases).
 
-## 3. Failure Cluster Matrix
+The retriever generally finds relevant policy content, as shown by context recall above 0.81 in all distributions. However, it returns too many irrelevant or weakly related chunks, reducing context precision. This is most visible in direct factual questions where version and document metadata should narrow the candidate set. Adversarial questions also reduce faithfulness because version conflicts and negation traps are harder to resolve.
 
-*(Mỗi ô = số câu có worst_metric = row, thuộc distribution = col)*
+## Suggested Fixes
 
-| worst_metric | factual | multi_hop | adversarial | Total |
-|---|---|---|---|---|
-| faithfulness | | | | |
-| answer_relevancy | | | | |
-| context_precision | | | | |
-| context_recall | | | | |
-
----
-
-## 4. Dominant Failure Analysis
-
-**Dominant distribution:** [factual / multi_hop / adversarial]  
-**Dominant metric:** [faithfulness / answer_relevancy / context_precision / context_recall]
-
-**Lý do phân tích:**
-
-> [Viết 3-5 câu giải thích tại sao distribution này hay bị failure, 
->  tại sao metric này thấp nhất trong corpus HR policy tiếng Việt]
-
----
-
-## 5. Suggested Fixes
-
-| Metric yếu | Root cause | Suggested fix |
+| Metric | Root cause | Suggested fix |
 |---|---|---|
-| faithfulness | LLM hallucinating | |
-| context_recall | Missing relevant chunks | |
-| context_precision | Too many irrelevant chunks | |
-| answer_relevancy | Answer doesn't match question | |
+| context_precision | Too many irrelevant chunks | Improve reranking, source/version metadata filters, and reduce final context size |
+| faithfulness | Version conflicts and unsupported inference | Add explicit current-version instructions and answer verification |
+| context_recall | Multi-hop evidence split across chunks | Add parent-child retrieval and query decomposition |
+| answer_relevancy | Query intent not fully captured | Improve prompt template and question-type routing |
 
----
-
-## 6. Nhận xét về Adversarial Distribution
-
-> [So sánh avg_score của adversarial vs factual vs multi_hop.
->  Pipeline có bị "nhầm" bởi version conflicts (v2023 vs v2024) không?
->  Câu nào trong bottom 10 rơi vào adversarial? Tại sao?]
+The adversarial average (0.6719) is lower than factual (0.7396), which indicates the test set is exposing the expected version-conflict weaknesses.
